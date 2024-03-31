@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1083530900540",
+    "project_id": "gopal-jewellers-28d82",
+    "storage_bucket": "gopal-jewellers-28d82.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1083530900540:android:e3cfbaf5370ea20fd5bf39",
+        "android_client_info": {
+          "package_name": "com.niogen.gopaljewellers"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUFXfhqJ2NjWfnMLvZ5JsoGmDHS_7-Jwo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
