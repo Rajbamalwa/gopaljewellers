@@ -7,9 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gopaljewellers/backend/supabase/Supabase.dart';
+import 'package:gopaljewellers/provider/admin_provider.dart';
 import 'package:gopaljewellers/provider/provider.dart';
 import 'package:gopaljewellers/services/internet.dart';
-import 'package:gopaljewellers/services/notification.dart';
 import 'package:gopaljewellers/views/Home/home_screen.dart';
 import 'package:gopaljewellers/views/login/login_screen.dart';
 import 'package:provider/provider.dart';
@@ -21,7 +21,7 @@ import 'constants/color.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
-    options: FirebaseOptions(
+    options: const FirebaseOptions(
       apiKey: 'AIzaSyDUFXfhqJ2NjWfnMLvZ5JsoGmDHS_7-Jwo',
       appId: '1:1083530900540:ios:f341690805e1123bd5bf39',
       messagingSenderId: '1083530900540',
@@ -29,8 +29,9 @@ void main() async {
     ),
   );
   await SupaFlow.initialize();
-  NotificationService().initNotification();
+  // Register background message handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
   // Preventing Landscape Mode in the application
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -42,12 +43,6 @@ void main() async {
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
-
   await Firebase.initializeApp();
 }
 
@@ -85,6 +80,7 @@ class _MyAppState extends State<MyApp> {
       providers: [
         ChangeNotifierProvider(create: (_) => CheckInternet()),
         ChangeNotifierProvider(create: (_) => drawerProvider()),
+        ChangeNotifierProvider(create: (_) => AdminBloc()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

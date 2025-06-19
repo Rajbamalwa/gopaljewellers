@@ -18,8 +18,8 @@ abstract class UsersRecord implements Built<UsersRecord, UsersRecordBuilder> {
   @BuiltValueField(wireName: 'photo_url')
   String? get photoUrl;
 
-  @BuiltValueField(wireName: 'city')
-  String? get city;
+  @BuiltValueField(wireName: 'fcm')
+  String? get fcm;
 
   String? get uid;
 
@@ -41,7 +41,7 @@ abstract class UsersRecord implements Built<UsersRecord, UsersRecordBuilder> {
     ..displayName = ''
     ..photoUrl = ''
     ..uid = ''
-    ..city = ''
+    ..fcm = ''
     ..phoneNumber = ''
     ..deviceTokens = BuiltList([]);
 
@@ -72,7 +72,7 @@ Map<String, dynamic> createUsersRecordData(
     String? displayName,
     String? photoUrl,
     String? uid,
-    String? city,
+    String? fcm,
     DateTime? createdTime,
     String? phoneNumber,
     BuiltList<String>? deviceTokens}) {
@@ -85,7 +85,7 @@ Map<String, dynamic> createUsersRecordData(
         ..photoUrl = photoUrl
         ..uid = uid
         ..createdTime = createdTime
-        ..city = city
+        ..fcm = fcm
         ..phoneNumber = phoneNumber
         ..deviceTokens = deviceTokens,
     ),

@@ -9,6 +9,7 @@ import 'package:gopaljewellers/backend/schema/users_record.dart';
 import 'package:gopaljewellers/backend/supabase/models/cart_model.dart';
 import 'package:gopaljewellers/backend/supabase/models/orders.dart';
 import 'package:gopaljewellers/backend/supabase/models/product_model.dart';
+import 'package:gopaljewellers/services/Apis.dart';
 import 'package:gopaljewellers/services/helper.dart';
 import 'package:gopaljewellers/utils/loading.dart';
 import 'package:gopaljewellers/utils/utils.dart';
@@ -16,6 +17,7 @@ import 'package:gopaljewellers/views/Home/home_screen.dart';
 
 import '../../../Widgets/button/gradient_button.dart';
 import '../../../Widgets/custom/customtext.dart';
+import '../../../backend/supabase/models/admin.dart';
 import '../../../constants/color.dart';
 import '../../../services/notification.dart';
 
@@ -60,6 +62,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
 
   List ordered = [];
   final NotificationService _notifications = NotificationService();
+  // List<AdminRow> admin = [];
 
   void uploadToDatabase(List<ProductsRows> products) {
     // for (int i = 0; i < widget.orders.length; i++) {
@@ -101,13 +104,31 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
               matchingRows: (q) => q
                   .eq("product_id", product.product_id)
                   .eq("user_uid", currentUserUid.toString()));
-          _notifications.scheduleNotification(
-            title: Helpers().randomTitle().toString(),
-            body: product.product_name.toString(),
-            scheduledNotificationDateTime: DateTime.now().add(
-              Duration(seconds: 2),
-            ),
+          // _notifications.scheduleNotification(
+          //   title: Helpers().randomTitle().toString(),
+          //   body: product.product_name.toString(),
+          //   scheduledNotificationDateTime: DateTime.now().add(
+          //     const Duration(seconds: 2),
+          //   ),
+          // );
+          ApiService.sendNotification(
+            fcmToken,
+            "Order Confirmed",
+            "Your order has been confirmed",
+            "order",
+            "order_ID",
           );
+          AdminTable()
+              .queryRows(queryFn: (q) => q.eq("admin", "Admin"))
+              .then((value) {
+            ApiService.sendNotification(
+              value[0].token['uid'].toString(),
+              "New Order",
+              "You have one new order",
+              "order",
+              "order_ID",
+            );
+          });
         }
         log("Successfully ordered");
         Navigator.pushReplacement(
@@ -157,6 +178,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      SizedBox(height: 20),
                       CustomTextField(
                         controller: n_controller,
                         hintText: "Name",
@@ -169,11 +191,13 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                           }).then((value) {}).onError((error, stackTrace) {});
                         },
                       ),
+                      SizedBox(height: 10),
                       CustomTextField(
                         controller: m_controller,
                         hintText: "Phone Number",
                         keyboardType: TextInputType.number,
                       ),
+                      SizedBox(height: 10),
                       CustomTextField(
                         controller: a_controller,
                         hintText: "Remark ( Optional )",
@@ -222,7 +246,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                                         ),
                                       ),
                                       title: CustomText(
-                                          data.product_name.toString(),
+                                          data.product_type.toString(),
                                           black,
                                           20,
                                           FontWeight.w900,
@@ -278,7 +302,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                                                 FontWeight.w400,
                                                 TextOverflow.clip),
                                             CustomText2(
-                                                data.product_type.toString(),
+                                                data.product_name.toString(),
                                                 black,
                                                 12,
                                                 FontWeight.w700,

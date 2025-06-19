@@ -139,7 +139,6 @@ String get currentUserUid => currentUser?.user?.uid ?? '';
 
 String get currentUserDisplayName =>
     currentUserDocument?.displayName ?? currentUser?.user?.displayName ?? '';
-String get currentCity => currentUserDocument?.city ?? '';
 
 String get currentUserPhoto =>
     currentUserDocument?.photoUrl ??
@@ -148,6 +147,7 @@ String get currentUserPhoto =>
 
 String get currentPhoneNumber =>
     currentUserDocument?.phoneNumber ?? currentUser?.user?.phoneNumber ?? '';
+String get fcmToken => currentUserDocument?.fcm ?? '';
 
 String get currentJwtToken => _currentJwtToken ?? '';
 

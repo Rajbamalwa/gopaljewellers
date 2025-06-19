@@ -13,19 +13,29 @@ class TabBarMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TabBar(
-      labelColor: black,
+      labelColor: primaryColor3,
       unselectedLabelColor: grey,
-      labelStyle: GoogleFonts.inter(
-        color: black,
+      labelStyle: TextStyle(
+        color: primaryColor3,
         fontSize: 15,
         fontWeight: FontWeight.w600,
       ),
-      unselectedLabelStyle: GoogleFonts.alata(
+      unselectedLabelStyle: TextStyle(
         color: secondaryTextColor,
         fontSize: 12,
         fontWeight: FontWeight.w600,
       ),
-      indicatorColor: black,
+      indicatorColor: primaryColor3,
+      indicator: BoxDecoration(
+        color: primaryColor3.withOpacity(0.1),
+        border: Border.symmetric(
+          horizontal: BorderSide(
+            color: primaryColor3,
+            width: 2,
+          ),
+          vertical: BorderSide.none,
+        ),
+      ),
       indicatorWeight: 3,
       tabs: List.generate(
           tabTitle.length,

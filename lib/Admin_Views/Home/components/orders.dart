@@ -1,25 +1,29 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:gopaljewellers/backend/authentication/auth_util.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../Widgets/custom/appBarWidget.dart';
 import '../../../../Widgets/custom/customtext.dart';
-import '../../../../backend/supabase/models/orders.dart';
 import '../../../../constants/color.dart';
-import '../../../../utils/flutter_flow/date_format.dart';
-import '../../../../utils/flutter_flow/default_value.dart';
-import '../../../../utils/flutter_flow/tab_bar_menu.dart';
-import '../../../../utils/loading.dart';
+import '../../../Widgets/custom/appBarWidget.dart';
+import '../../../backend/supabase/models/orders.dart';
+import '../../../backend/supabase/models/user_model.dart';
+import '../../../services/Apis.dart';
+import '../../../utils/flutter_flow/date_format.dart';
+import '../../../utils/flutter_flow/default_value.dart';
+import '../../../utils/flutter_flow/tab_bar_menu.dart';
+import '../../../utils/loading.dart';
+import '../../../utils/utils.dart';
 
-class OrdersScreen extends StatefulWidget {
-  const OrdersScreen({super.key});
+class AdminOrderScreen extends StatefulWidget {
+  const AdminOrderScreen({super.key});
 
   @override
-  State<OrdersScreen> createState() => _OrdersScreenState();
+  State<AdminOrderScreen> createState() => _AdminOrderScreenState();
 }
 
-class _OrdersScreenState extends State<OrdersScreen> {
+class _AdminOrderScreenState extends State<AdminOrderScreen> {
   @override
   void initState() {
     // TODO: implement initState
@@ -39,8 +43,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     });
     await OrdersTable()
         .queryRows(
-      queryFn: (q) =>
-          q.eq("user_uid", currentUserUid).order('id', ascending: false),
+      queryFn: (q) => q.order('id', ascending: false),
     )
         .then((value) {
       log(value.toString());
@@ -54,6 +57,51 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   ScrollController scrollController = ScrollController();
+  List<UserRow> users = [];
+
+  getUsers(uid, from) async {
+    setState(() {
+      iSLoading = true;
+    });
+    await UserTable()
+        .queryRows(
+      queryFn: (q) => q.eq("uid", uid).limit(1).order('id', ascending: false),
+    )
+        .then((value) {
+      log(value.toString());
+      users.addAll(value);
+      if (from == "delivery") {
+        ApiService.sendNotification(
+          value[0].token['uid'].toString(),
+          "Delivery Date Schedule",
+          "Check when your order will delivered!!",
+          "order",
+          "order_ID",
+        );
+      } else if (from == "delivered") {
+        ApiService.sendNotification(
+          value[0].token['uid'].toString(),
+          "Product Delivered",
+          "How was the product!!",
+          "order",
+          "order_ID",
+        );
+      } else if (from == "cancel") {
+        ApiService.sendNotification(
+          value[0].token['uid'].toString(),
+          "Order Cancel",
+          "Your order has been cancel by admin!!",
+          "order",
+          "order_ID",
+        );
+      }
+      log(users.toString());
+    });
+
+    setState(() {
+      iSLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -279,6 +327,201 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                             TextOverflow.clip,
                                           ),
                                         ),
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        bottom: 4, top: 8, left: 10, right: 10),
+                                    child: InkWell(
+                                      onTap: () async {
+                                        String url = Platform.isIOS
+                                            ? 'tel://${data.user_number}'
+                                            : 'tel:${data.user_number}';
+
+                                        if (await canLaunch(url)) {
+                                          await launch(url);
+                                        } else {
+                                          print(' could not launch ${url}');
+                                        }
+                                      },
+                                      child: Icon(
+                                        Icons.call_outlined,
+                                        color: green,
+                                        size: 25,
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        bottom: 4, top: 8, left: 10, right: 10),
+                                    child: InkWell(
+                                      onTap: () async {
+                                        DateTime selectedDate = data
+                                                    .delievery_date !=
+                                                null
+                                            ? DateTime.parse(
+                                                data.delievery_date.toString())
+                                            : DateTime.now();
+
+                                        final DateTime? picked =
+                                            await showDatePicker(
+                                                context: context,
+                                                initialDate: selectedDate,
+                                                firstDate: DateTime(2015, 8),
+                                                lastDate: DateTime(2101));
+                                        if (picked != null &&
+                                            picked != selectedDate) {
+                                          setState(() {
+                                            selectedDate = picked;
+                                          });
+                                          OrdersTable().update(
+                                              data: {
+                                                "delievery_date":
+                                                    picked.toString(),
+                                              },
+                                              matchingRows: (q) => q.eq(
+                                                  'order_id',
+                                                  data.order_id
+                                                      .toString())).then(
+                                              (value) {
+                                            setState(() {
+                                              products.clear();
+                                              getOrders();
+                                              getUsers(
+                                                  data.user_uid, "delivery");
+                                            });
+                                            Utils().toastMessage(
+                                                "Delivery Date Added");
+                                          }).onError((error, stackTrace) {
+                                            Utils().toastMessage(
+                                                "Something went wrong");
+                                          });
+                                        }
+                                      },
+                                      child: Icon(
+                                        Icons.calendar_month,
+                                        color: Colors.blueGrey.shade600,
+                                        size: 25,
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        bottom: 4, top: 8, left: 10, right: 10),
+                                    child: InkWell(
+                                      onTap: () async {
+                                        showDialog(
+                                            context: context,
+                                            builder: (context) {
+                                              return AlertDialog(
+                                                content: SizedBox(
+                                                  height: 120,
+                                                  child: Column(
+                                                    children: [
+                                                      ListTile(
+                                                        onTap: () {
+                                                          OrdersTable().update(
+                                                              data: {
+                                                                "delivered":
+                                                                    true,
+                                                              },
+                                                              matchingRows: (q) => q.eq(
+                                                                  'order_id',
+                                                                  data.order_id
+                                                                      .toString())).then(
+                                                              (value) {
+                                                            setState(() {
+                                                              products.clear();
+                                                              getOrders();
+                                                              getUsers(
+                                                                  data.user_uid,
+                                                                  "delivered");
+                                                            });
+                                                            Navigator.pop(
+                                                                context);
+
+                                                            Utils().toastMessage(
+                                                                "Delieverd");
+                                                          }).onError((error,
+                                                              stackTrace) {
+                                                            Utils().toastMessage(
+                                                                "Something went wrong");
+                                                          });
+                                                        },
+                                                        title: CustomText2(
+                                                          "Completed",
+                                                          black,
+                                                          14,
+                                                          FontWeight.w700,
+                                                          TextOverflow.ellipsis,
+                                                        ),
+                                                      ),
+                                                      ListTile(
+                                                        onTap: () {
+                                                          OrdersTable().update(
+                                                              data: {
+                                                                "delivered":
+                                                                    false,
+                                                                "cancel": true
+                                                              },
+                                                              matchingRows: (q) => q.eq(
+                                                                  'order_id',
+                                                                  data.order_id
+                                                                      .toString())).then(
+                                                              (value) {
+                                                            setState(() {
+                                                              products.clear();
+                                                              getOrders();
+                                                              getUsers(
+                                                                  data.user_uid,
+                                                                  "cancel");
+                                                            });
+                                                            Navigator.pop(
+                                                                context);
+
+                                                            Utils().toastMessage(
+                                                                "Order Cancel");
+                                                          }).onError((error,
+                                                              stackTrace) {
+                                                            Utils().toastMessage(
+                                                                "Something went wrong");
+                                                          });
+                                                          Navigator.pop(
+                                                              context);
+                                                        },
+                                                        title: CustomText2(
+                                                          "Cancel",
+                                                          black,
+                                                          14,
+                                                          FontWeight.w700,
+                                                          TextOverflow.ellipsis,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.pop(context);
+                                                    },
+                                                    child: CustomText2(
+                                                      "Back",
+                                                      red,
+                                                      14,
+                                                      FontWeight.w500,
+                                                      TextOverflow.ellipsis,
+                                                    ),
+                                                  )
+                                                ],
+                                              );
+                                            });
+                                      },
+                                      child: Icon(
+                                        Icons.more_vert,
+                                        color: Colors.blueGrey.shade600,
+                                        size: 25,
                                       ),
                                     ),
                                   ),
@@ -652,7 +895,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return showModalBottomSheet(
       isScrollControlled: false,
       context: context,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
@@ -695,6 +938,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   )),
               detils(width, "Order Id", data.order_id.toString()),
               showDivider(),
+              detils(width, "Customer Name", data.user_name.toString()),
+              showDivider(),
+              detils(width, "Customer No.", data.user_number.toString()),
+              showDivider(),
               detils(
                   width, "Product Quantity", data.product_quantity.toString()),
               showDivider(),
@@ -720,50 +967,45 @@ class _OrdersScreenState extends State<OrdersScreen> {
               const SizedBox(
                 height: 10,
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    // height: 100,
-                    width: width * 0.4,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                          color: secondaryTextColor.withOpacity(0.2),
-                          width: 0.6),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            data.product_weight.toString(),
-                            overflow: TextOverflow.clip,
-                            textAlign: TextAlign.left,
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700,
-                              color: green,
-                            ),
+              Center(
+                child: Container(
+                  // height: 100,
+                  width: width * 0.4,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                        color: secondaryTextColor.withOpacity(0.2), width: 0.6),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          data.product_weight.toString(),
+                          overflow: TextOverflow.clip,
+                          textAlign: TextAlign.left,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: green,
                           ),
-                          Text(
-                            "Weight",
-                            overflow: TextOverflow.clip,
-                            textAlign: TextAlign.left,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: black,
-                            ),
+                        ),
+                        Text(
+                          "Weight",
+                          overflow: TextOverflow.clip,
+                          textAlign: TextAlign.left,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: black,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
               SizedBox(
                 height: 10,

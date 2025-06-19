@@ -46,4 +46,7 @@ class FeedbackRows extends SupabaseDataRow {
   String? get subject => getField<String>('subject');
 
   set subject(String? value) => setField<String>('subject', value);
+  String? get feedback_id => getField<String>('feedback_id');
+
+  set feedback_id(String? value) => setField<String>('feedback_id', value);
 }

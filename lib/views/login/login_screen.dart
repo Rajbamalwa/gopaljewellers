@@ -14,6 +14,7 @@ import 'package:timer_count_down/timer_controller.dart';
 import 'package:timer_count_down/timer_count_down.dart';
 
 import '../../../utils/snacbar_widget.dart';
+import '../../Admin_Views/Login/LoginScreen.dart';
 import '../../Widgets/button/gradient_button.dart';
 import '../../Widgets/custom/customtext.dart';
 import '../../backend/supabase/Supabase.dart';
@@ -497,6 +498,35 @@ class _PhoneViewState extends State<PhoneView> {
           ),
         ),
       ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            CustomText(
+              "Login as ",
+              secondaryTextColor,
+              14,
+              FontWeight.w400,
+              TextOverflow.clip,
+            ),
+            InkWell(
+              onTap: () {
+                Navigator.pushReplacement(
+                    context, MaterialPageRoute(builder: (_) => SignInPage()));
+              },
+              child: CustomText(
+                "Admin ?",
+                blue,
+                14,
+                FontWeight.w600,
+                TextOverflow.clip,
+              ),
+            )
+          ],
+        ),
+      ),
     );
   }
 
@@ -510,14 +540,17 @@ class _PhoneViewState extends State<PhoneView> {
     );
     await auth.signInWithCredential(credential).then((value) {
       SupaFlow.client.from('users').insert({
-        'display_name': value.user!.toString(),
+        'display_name': value.user!.displayName!.toString(),
         'email': value.user!.email ?? "",
         'photo_url': value.user!.photoURL ??
             "https://cdn-icons-png.flaticon.com/512/149/149071.png",
         'uid': value.user!.uid.toString(),
         'user_number': nu.toString(),
+        "firebase_token": {},
         "users": "Customer",
-        "created_time": DateTime.now(),
+        "created_time": DateTime.now().toString(),
+      }).onError((error, stackTrace) {
+        log(error.toString());
       });
 
       FirebaseFirestore.instance

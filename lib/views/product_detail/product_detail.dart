@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +12,8 @@ import 'package:gopaljewellers/Widgets/custom/appBarWidget.dart';
 import 'package:gopaljewellers/backend/authentication/auth_util.dart';
 import 'package:gopaljewellers/utils/loading.dart';
 import 'package:gopaljewellers/views/product_detail/components/image_zoom.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 
 import '../../Widgets/button/custom_button.dart';
@@ -61,7 +65,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           .eq("product_type", widget.data.product_type)
           .neq("product_id", widget.data.product_id)
           .eq("product_material", widget.data.product_material)
-      .limit(10)
+          .limit(10)
           .order('id', ascending: false),
     )
         .then((value) {
@@ -118,15 +122,44 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   var selectedImage;
 
   List downloaded = [];
-  void _saveNetworkImage(url) async {
-    GallerySaver.saveImage(url, albumName: "Gopal Jewellers").then((value) {
+  // void _saveNetworkImage(url) async {
+  //   GallerySaver.saveImage(url, albumName: "Gopal Jewellers").then((value) {
+  //     if (downloaded.length == widget.data.product_images.length) {
+  //       Utils().toastMessage("Images downloaded");
+  //     }
+  //     log("Value - ${value.toString()}");
+  //   }).onError((error, stackTrace) {
+  //     log("Error - ${error.toString()}");
+  //   });
+  // }
+  Future<void> _saveNetworkImage(String imageUrl) async {
+    try {
+      final http.Response response = await http.get(Uri.parse(imageUrl));
+      final Uint8List bytes = response.bodyBytes;
+      final Directory tempDir = await getTemporaryDirectory();
+      final String filePath = '${tempDir.path}/temp_image.png';
+      final File imageFile = File(filePath);
+      await imageFile.writeAsBytes(bytes);
+
+      final result = await GallerySaver.saveImage(
+        filePath,
+        albumName: 'Gopal Jewellers', // Replace with your desired album name
+      );
       if (downloaded.length == widget.data.product_images.length) {
-        Utils().toastMessage("Images downloaded");
+        // Utils().toastMessage("Images downloaded");
+        if (result != null) {
+          Utils().toastMessage("Images saved to gallery");
+
+          // showSnackBar(context, 'Images saved to gallery');
+        } else {
+          Utils().toastMessage("Failed to save images to gallery");
+          // showSnackBar(context, 'Failed to save images to gallery');
+        }
       }
-      log("Value - ${value.toString()}");
-    }).onError((error, stackTrace) {
-      log("Error - ${error.toString()}");
-    });
+    } catch (e) {
+      log(e.toString());
+      // showDowloadMessage = 'Error saving images: $e';
+    }
   }
 
   ScreenshotController screenshotController = ScreenshotController();
@@ -144,7 +177,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         return true;
       },
       child: Scaffold(
-        appBar: appBarWidget(widget.data.product_type, true, [
+        appBar: appBarWidget(widget.data.product_name, true, [
           GestureDetector(
             onTap: () {
               String shareText =
@@ -187,100 +220,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               var image = widget.data.product_images[index];
                               return Screenshot(
                                 controller: screenshotController,
-                                child: Container(
-                                  height: 300,
-                                  width: width,
-                                  decoration: BoxDecoration(
-                                    image: DecorationImage(
-                                      image: NetworkImage(
-                                        image,
-                                      ),
-                                      fit: BoxFit.cover,
-                                      filterQuality: FilterQuality.high,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Align(
-                                alignment: Alignment.topRight,
-                                child: InkWell(
-                                  onTap: likes.contains(
-                                          currentPhoneNumber.toString())
-                                      ? () {
-                                          likes.remove(
-                                              currentPhoneNumber.toString());
-                                          ProductTables().update(
-                                              data: {
-                                                "product_likes": likes,
-                                              },
-                                              matchingRows: (q) => q.eq(
-                                                  "product_id",
-                                                  widget.data.product_id)).then(
-                                              (value) {
-                                            Utils().toastMessage(
-                                                "Removed from favourite");
-                                            setState(() {});
-                                          }).onError((error, stackTrace) {
-                                            log(error.toString());
-                                            Utils().toastMessage(
-                                                "Something went wrong");
-                                          });
-                                        }
-                                      : () {
-                                          if (currentPhoneNumber.isEmpty) {
-                                            Utils()
-                                                .toastMessage("Please login");
-                                          } else {
-                                            likes.add(
-                                                currentPhoneNumber.toString());
-
-                                            ProductTables().update(
-                                                data: {
-                                                  "product_likes": likes,
-                                                },
-                                                matchingRows: (q) => q.eq(
-                                                    "product_id",
-                                                    widget
-                                                        .data.product_id)).then(
-                                                (value) {
-                                              setState(() {});
-
-                                              Utils().toastMessage(
-                                                  "Added to favourite");
-                                            }).onError((error, stackTrace) {
-                                              log(error.toString());
-                                              Utils().toastMessage(
-                                                  "Something went wrong");
-                                            });
-                                          }
-                                        },
-                                  child: Icon(
-                                    likes.contains(
-                                            currentPhoneNumber.toString())
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    semanticLabel: "Favourite",
-                                    color: likes.contains(
-                                            currentPhoneNumber.toString())
-                                        ? red
-                                        : white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Align(
-                                alignment: Alignment.bottomRight,
                                 child: InkWell(
                                   onTap: () {
                                     Navigator.push(
@@ -292,34 +231,160 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       ),
                                     );
                                   },
-                                  child: Icon(
-                                    Icons.open_in_new,
-                                    semanticLabel: "Open",
-                                    color: white,
+                                  child: Container(
+                                    height: 300,
+                                    width: width,
+                                    decoration: BoxDecoration(
+                                      image: DecorationImage(
+                                        image: NetworkImage(
+                                          image,
+                                        ),
+                                        fit: BoxFit.cover,
+                                        filterQuality: FilterQuality.high,
+                                      ),
+                                    ),
                                   ),
                                 ),
+                              );
+                            },
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Container(
+                              width: 40,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                color: primaryColor,
                               ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Align(
-                                alignment: Alignment.bottomRight,
-                                child: InkWell(
-                                  onTap: () {
-                                    for (String url
-                                        in widget.data.product_images) {
-                                      _saveNetworkImage(url);
-                                    }
-                                  },
-                                  child: Icon(
-                                    Icons.download,
-                                    semanticLabel: "Download",
-                                    color: white,
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Align(
+                                      alignment: Alignment.topRight,
+                                      child: InkWell(
+                                        onTap: likes.contains(
+                                                currentPhoneNumber.toString())
+                                            ? () {
+                                                likes.remove(currentPhoneNumber
+                                                    .toString());
+                                                ProductTables().update(
+                                                    data: {
+                                                      "product_likes": likes,
+                                                    },
+                                                    matchingRows: (q) => q.eq(
+                                                        "product_id",
+                                                        widget.data
+                                                            .product_id)).then(
+                                                    (value) {
+                                                  Utils().toastMessage(
+                                                      "Removed from favourite");
+                                                  setState(() {});
+                                                }).onError((error, stackTrace) {
+                                                  log(error.toString());
+                                                  Utils().toastMessage(
+                                                      "Something went wrong");
+                                                });
+                                              }
+                                            : () {
+                                                if (currentPhoneNumber
+                                                    .isEmpty) {
+                                                  Utils().toastMessage(
+                                                      "Please login");
+                                                } else {
+                                                  likes.add(currentPhoneNumber
+                                                      .toString());
+
+                                                  ProductTables().update(
+                                                      data: {
+                                                        "product_likes": likes,
+                                                      },
+                                                      matchingRows: (q) => q.eq(
+                                                          "product_id",
+                                                          widget.data
+                                                              .product_id)).then(
+                                                      (value) {
+                                                    setState(() {});
+
+                                                    Utils().toastMessage(
+                                                        "Added to favourite");
+                                                  }).onError(
+                                                      (error, stackTrace) {
+                                                    log(error.toString());
+                                                    Utils().toastMessage(
+                                                        "Something went wrong");
+                                                  });
+                                                }
+                                              },
+                                        child: Icon(
+                                          likes.contains(
+                                                  currentPhoneNumber.toString())
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          semanticLabel: "Favourite",
+                                          color: likes.contains(
+                                                  currentPhoneNumber.toString())
+                                              ? red
+                                              : red,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  // Padding(
+                                  //   padding: const EdgeInsets.all(8.0),
+                                  //   child: Align(
+                                  //     alignment: Alignment.bottomRight,
+                                  //     child: InkWell(
+                                  //       onTap: () {
+                                  //         Navigator.push(
+                                  //           context,
+                                  //           MaterialPageRoute(
+                                  //             builder: (_) => ImageZoomScreen(
+                                  //               images:
+                                  //                   widget.data.product_images,
+                                  //             ),
+                                  //           ),
+                                  //         );
+                                  //       },
+                                  //       child: Icon(
+                                  //         Icons.crop_free,
+                                  //         semanticLabel: "Open",
+                                  //         color: white,
+                                  //       ),
+                                  //     ),
+                                  //   ),
+                                  // ),
+
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Align(
+                                      alignment: Alignment.bottomRight,
+                                      child: InkWell(
+                                        onTap: () {
+                                          for (String url
+                                              in widget.data.product_images) {
+                                            downloaded.add("1");
+                                            _saveNetworkImage(url);
+                                          }
+                                        },
+                                        child: Icon(
+                                          Icons.download_outlined,
+                                          semanticLabel: "Download",
+                                          color: green,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
@@ -328,7 +393,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
                         child: Text(
-                          widget.data.product_name.toString(),
+                          widget.data.product_type.toString(),
                           overflow: TextOverflow.clip,
                           textAlign: TextAlign.left,
                           style: TextStyle(
@@ -415,12 +480,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                       ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          // height: 100,
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
                           width: width * 0.4,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(14),
@@ -435,46 +499,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Text(
-                                  widget.data.product_price.toString(),
-                                  overflow: TextOverflow.clip,
-                                  textAlign: TextAlign.left,
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w700,
-                                    color: green,
-                                  ),
-                                ),
-                                Text(
-                                  "Price",
-                                  overflow: TextOverflow.clip,
-                                  textAlign: TextAlign.left,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: black,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Container(
-                          // height: 100,
-                          width: width * 0.4,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                                color: secondaryTextColor.withOpacity(0.2),
-                                width: 0.6),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  widget.data.product_weight.toString(),
+                                  "${widget.data.product_weight} GM",
                                   overflow: TextOverflow.clip,
                                   textAlign: TextAlign.left,
                                   style: TextStyle(
@@ -497,7 +522,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                           ),
                         ),
-                      ],
+                      ),
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
@@ -508,7 +533,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     detils(width, "Material",
                         widget.data.product_material.toString()),
-                    detils(width, "Type", widget.data.product_type.toString()),
+                    detils(width, "Type", widget.data.product_name.toString()),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
                       child: Divider(
@@ -527,288 +552,291 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               TextOverflow.fade,
                             ),
                           ),
-                    Container(
-                      height: 290,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              controller: scrollController,
-                              // gridDelegate:
-                              //     const SliverGridDelegateWithFixedCrossAxisCount(
-                              //         crossAxisCount: 2,
-                              //         mainAxisSpacing: 2,
-                              //         crossAxisSpacing: 2,
-                              //         childAspectRatio: 0.72),
-                              itemCount: products.length,
-                              shrinkWrap: true,
-                              physics: const BouncingScrollPhysics(),
-                              padding: const EdgeInsets.only(left: 8),
+                    products.isEmpty
+                        ? SizedBox()
+                        : Container(
+                            height: 290,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    controller: scrollController,
+                                    itemCount: products.length,
+                                    shrinkWrap: true,
+                                    physics: const BouncingScrollPhysics(),
+                                    padding: const EdgeInsets.only(left: 8),
+                                    itemBuilder: (context, index) {
+                                      var data = products[index];
+                                      final inCart = cart.any((cartProduct) =>
+                                          cartProduct.product_id ==
+                                          data.product_id);
+                                      log(inCart.toString());
 
-                              itemBuilder: (context, index) {
-                                var data = products[index];
-                                final inCart = cart.any((cartProduct) =>
-                                    cartProduct.product_id == data.product_id);
-                                log(inCart.toString());
-
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(10),
-                                    onLongPress: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (BuildContext context) {
-                                          return Theme(
-                                            data: ThemeData(
-                                                canvasColor: transparent),
-                                            child: AlertDialog(
-                                              backgroundColor: transparent,
-                                              insetPadding: EdgeInsets.all(16),
-                                              contentPadding: EdgeInsets.zero,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(0.0),
-                                              ),
-                                              elevation: 0,
-                                              // backgroundColor: Colors.transparent,
-                                              content: contentBox(
-                                                  context, data, height, width,
-                                                  () {
-                                                Navigator.pop(context);
-                                                Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                        builder: (_) =>
-                                                            ProductDetailScreen(
-                                                              data: data,
-                                                              loadData: () {
-                                                                setState(() {
-                                                                  cart.clear();
-                                                                  products
-                                                                      .clear();
-                                                                  getProducts();
-                                                                });
-                                                              },
-                                                            )));
-                                              }),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                    onTap: () {
-                                      Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (_) =>
-                                                  ProductDetailScreen(
-                                                    data: data,
-                                                    loadData: () {
-                                                      setState(() {
-                                                        cart.clear();
-                                                        products.clear();
-                                                        getProducts();
-                                                      });
-                                                    },
-                                                  )));
-                                    },
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Container(
-                                          height: height * 0.25,
-                                          width: width * 0.4,
-                                          decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                            image: DecorationImage(
-                                              image: NetworkImage(
-                                                data.product_images[0]
-                                                    .toString(),
-                                              ),
-                                              fit: BoxFit.cover,
-                                              filterQuality: FilterQuality.high,
-                                            ),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.end,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
-                                              children: [
-                                                // Align(
-                                                //   alignment: Alignment.topRight,
-                                                //   child: GestureDetector(
-                                                //     onTap: () {
-                                                //       String share_text = "";
-                                                //       // Utils()
-                                                //       //     .captureScreenShotAndText(
-                                                //       //     screenshotController,
-                                                //       //     share_text);
-                                                //     },
-                                                //     child: CircleAvatar(
-                                                //       radius: 15,
-                                                //       backgroundColor:
-                                                //           primaryColor22,
-                                                //       child: Icon(
-                                                //         Icons.share,
-                                                //         size: 15,
-                                                //         color: primaryColor,
-                                                //       ),
-                                                //     ),
-                                                //   ),
-                                                // ),
-                                                inCart
-                                                    ? SizedBox()
-                                                    : Align(
-                                                        alignment: Alignment
-                                                            .bottomRight,
-                                                        child: GestureDetector(
-                                                          onTap: () {
-                                                            if (currentPhoneNumber
-                                                                .isEmpty) {
-                                                              Utils().toastMessage(
-                                                                  "Please login");
-                                                            } else {
-                                                              CartTable().insert({
-                                                                "product_id": data
-                                                                    .product_id
-                                                                    .toString(),
-                                                                "product_name": data
-                                                                    .product_name
-                                                                    .toString(),
-                                                                "product_material": data
-                                                                    .product_material
-                                                                    .toString(),
-                                                                "product_type": data
-                                                                    .product_type
-                                                                    .toString(),
-                                                                "product_weight": data
-                                                                    .product_weight
-                                                                    .toString(),
-                                                                "product_quantity":
-                                                                    "1",
-                                                                "product_price": data
-                                                                    .product_price
-                                                                    .toString(),
-                                                                "user_name":
-                                                                    currentUserDisplayName
-                                                                        .toString(),
-                                                                "user_uid":
-                                                                    currentUserUid
-                                                                        .toString(),
-                                                                "user_phone":
-                                                                    currentPhoneNumber
-                                                                        .toString(),
-                                                                "added_time":
-                                                                    DateTime.now()
-                                                                        .toString(),
-                                                                "product_image": data
-                                                                    .product_images[
-                                                                        0]
-                                                                    .toString()
-                                                                    .toString(),
-                                                              }).then((value) {
-                                                                Utils().toastMessage(
-                                                                    "Added to Cart");
-                                                                setState(() {
-                                                                  products
-                                                                      .clear();
-                                                                  cart.clear();
-                                                                  getProducts();
-                                                                });
-                                                              }).onError((error,
-                                                                  stackTrace) {
-                                                                log(error
-                                                                    .toString());
-                                                                Utils().toastMessage(
-                                                                    "Something went wrong");
-                                                              });
-                                                            }
+                                      return Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 8),
+                                        child: InkWell(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          onLongPress: () {
+                                            showDialog(
+                                              context: context,
+                                              builder: (BuildContext context) {
+                                                return Theme(
+                                                  data: ThemeData(
+                                                      canvasColor: transparent),
+                                                  child: AlertDialog(
+                                                    backgroundColor:
+                                                        transparent,
+                                                    insetPadding:
+                                                        EdgeInsets.all(16),
+                                                    contentPadding:
+                                                        EdgeInsets.zero,
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              0.0),
+                                                    ),
+                                                    elevation: 0,
+                                                    // backgroundColor: Colors.transparent,
+                                                    content: contentBox(
+                                                        context,
+                                                        data,
+                                                        height,
+                                                        width, () {
+                                                      Navigator.pop(context);
+                                                      Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                              builder: (_) =>
+                                                                  ProductDetailScreen(
+                                                                    data: data,
+                                                                    loadData:
+                                                                        () {
+                                                                      setState(
+                                                                          () {
+                                                                        cart.clear();
+                                                                        products
+                                                                            .clear();
+                                                                        getProducts();
+                                                                      });
+                                                                    },
+                                                                  )));
+                                                    }),
+                                                  ),
+                                                );
+                                              },
+                                            );
+                                          },
+                                          onTap: () {
+                                            Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        ProductDetailScreen(
+                                                          data: data,
+                                                          loadData: () {
+                                                            setState(() {
+                                                              cart.clear();
+                                                              products.clear();
+                                                              getCart();
+                                                              getProducts();
+                                                            });
                                                           },
-                                                          child: CircleAvatar(
-                                                            radius: 15,
-                                                            backgroundColor:
-                                                                primaryColor22,
-                                                            child: Icon(
-                                                              Icons
-                                                                  .add_shopping_cart,
-                                                              size: 15,
-                                                              color:
-                                                                  primaryColor,
+                                                        )));
+                                          },
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Container(
+                                                height: height * 0.25,
+                                                width: width * 0.4,
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  image: DecorationImage(
+                                                    image: NetworkImage(
+                                                      data.product_images[0]
+                                                          .toString(),
+                                                    ),
+                                                    fit: BoxFit.cover,
+                                                    filterQuality:
+                                                        FilterQuality.high,
+                                                  ),
+                                                ),
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(8.0),
+                                                  child: Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment.end,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment.end,
+                                                    children: [
+                                                      inCart
+                                                          ? SizedBox()
+                                                          : Align(
+                                                              alignment: Alignment
+                                                                  .bottomRight,
+                                                              child:
+                                                                  GestureDetector(
+                                                                onTap: () {
+                                                                  if (currentPhoneNumber
+                                                                      .isEmpty) {
+                                                                    Utils().toastMessage(
+                                                                        "Please login");
+                                                                  } else {
+                                                                    CartTable().insert({
+                                                                      "product_id": data
+                                                                          .product_id
+                                                                          .toString(),
+                                                                      "product_name": data
+                                                                          .product_type
+                                                                          .toString(),
+                                                                      "product_material": data
+                                                                          .product_material
+                                                                          .toString(),
+                                                                      "product_type": data
+                                                                          .product_name
+                                                                          .toString(),
+                                                                      "product_weight": data
+                                                                          .product_weight
+                                                                          .toString(),
+                                                                      "product_quantity":
+                                                                          "1",
+                                                                      "product_price": data
+                                                                          .product_price
+                                                                          .toString(),
+                                                                      "user_name":
+                                                                          currentUserDisplayName
+                                                                              .toString(),
+                                                                      "user_uid":
+                                                                          currentUserUid
+                                                                              .toString(),
+                                                                      "user_phone":
+                                                                          currentPhoneNumber
+                                                                              .toString(),
+                                                                      "added_time":
+                                                                          DateTime.now()
+                                                                              .toString(),
+                                                                      "product_image": data
+                                                                          .product_images[
+                                                                              0]
+                                                                          .toString()
+                                                                          .toString(),
+                                                                    }).then(
+                                                                        (value) {
+                                                                      Utils().toastMessage(
+                                                                          "Added to Cart");
+                                                                      setState(
+                                                                          () {
+                                                                        cart.clear();
+                                                                        products
+                                                                            .clear();
+                                                                        getCart();
+                                                                        getProducts();
+                                                                      });
+                                                                    }).onError(
+                                                                        (error,
+                                                                            stackTrace) {
+                                                                      log(error
+                                                                          .toString());
+                                                                      Utils().toastMessage(
+                                                                          "Something went wrong");
+                                                                    });
+                                                                  }
+                                                                },
+                                                                child:
+                                                                    CircleAvatar(
+                                                                  radius: 15,
+                                                                  backgroundColor:
+                                                                      primaryColor3,
+                                                                  child: Icon(
+                                                                    Icons
+                                                                        .add_shopping_cart,
+                                                                    size: 15,
+                                                                    color:
+                                                                        white,
+                                                                  ),
+                                                                ),
+                                                              ),
                                                             ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        Container(
-                                          // color: primaryColor22,
-                                          width: width * 0.4,
-                                          child: Align(
-                                            alignment: Alignment.centerLeft,
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(8),
-                                              child: SingleChildScrollView(
-                                                scrollDirection:
-                                                    Axis.horizontal,
-                                                child: Text(
-                                                  data.product_name.toString(),
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  textAlign: TextAlign.left,
-                                                  maxLines: 2,
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: black,
+                                                    ],
                                                   ),
                                                 ),
                                               ),
-                                            ),
-                                          ),
-                                        ),
-                                        Container(
-                                          width: width * 0.38,
-                                          child: Align(
-                                            alignment: Alignment.centerLeft,
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.fromLTRB(
-                                                      8, 0, 8, 8),
-                                              child: Text(
-                                                data.product_weight.toString(),
-                                                overflow: TextOverflow.clip,
-                                                textAlign: TextAlign.left,
-                                                maxLines: 2,
-                                                style: TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: primaryColor22,
+                                              Container(
+                                                // color: primaryColor22,
+                                                width: width * 0.4,
+                                                child: Align(
+                                                  alignment:
+                                                      Alignment.centerLeft,
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.all(8),
+                                                    child:
+                                                        SingleChildScrollView(
+                                                      scrollDirection:
+                                                          Axis.horizontal,
+                                                      child: Text(
+                                                        data.product_name
+                                                            .toString(),
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        textAlign:
+                                                            TextAlign.left,
+                                                        maxLines: 2,
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color: black,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
-                                            ),
+                                              Container(
+                                                width: width * 0.38,
+                                                child: Align(
+                                                  alignment:
+                                                      Alignment.centerLeft,
+                                                  child: Padding(
+                                                    padding: const EdgeInsets
+                                                        .fromLTRB(8, 0, 8, 8),
+                                                    child: Text(
+                                                      data.product_weight
+                                                          .toString(),
+                                                      overflow:
+                                                          TextOverflow.clip,
+                                                      textAlign: TextAlign.left,
+                                                      maxLines: 2,
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        color: primaryColor22,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ],
-                                    ),
+                                      );
+                                    },
                                   ),
-                                );
-                              },
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),

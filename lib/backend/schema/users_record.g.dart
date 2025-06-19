@@ -40,10 +40,10 @@ class _$UsersRecordSerializer implements StructuredSerializer<UsersRecord> {
         ..add(serializers.serialize(value,
             specifiedType: const FullType(String)));
     }
-    value = object.city;
+    value = object.fcm;
     if (value != null) {
       result
-        ..add('city')
+        ..add('fcm')
         ..add(serializers.serialize(value,
             specifiedType: const FullType(String)));
     }
@@ -105,8 +105,8 @@ class _$UsersRecordSerializer implements StructuredSerializer<UsersRecord> {
           result.photoUrl = serializers.deserialize(value,
               specifiedType: const FullType(String)) as String?;
           break;
-        case 'city':
-          result.city = serializers.deserialize(value,
+        case 'fcm':
+          result.fcm = serializers.deserialize(value,
               specifiedType: const FullType(String)) as String?;
           break;
         case 'uid':
@@ -142,7 +142,7 @@ class _$UsersRecord extends UsersRecord {
   @override
   final String? photoUrl;
   @override
-  final String? city;
+  final String? fcm;
 
   @override
   final String? uid;
@@ -160,7 +160,7 @@ class _$UsersRecord extends UsersRecord {
       {this.email,
       this.displayName,
       this.photoUrl,
-      this.city,
+      this.fcm,
       this.uid,
       this.createdTime,
       this.phoneNumber,
@@ -181,7 +181,7 @@ class _$UsersRecord extends UsersRecord {
         email == other.email &&
         displayName == other.displayName &&
         photoUrl == other.photoUrl &&
-        city == other.city &&
+        fcm == other.fcm &&
         uid == other.uid &&
         createdTime == other.createdTime &&
         phoneNumber == other.phoneNumber &&
@@ -198,7 +198,7 @@ class _$UsersRecord extends UsersRecord {
                       $jc(
                           $jc($jc($jc(0, email.hashCode), displayName.hashCode),
                               photoUrl.hashCode),
-                          city.hashCode),
+                          fcm.hashCode),
                       uid.hashCode),
                   createdTime.hashCode),
               phoneNumber.hashCode),
@@ -212,7 +212,7 @@ class _$UsersRecord extends UsersRecord {
           ..add('email', email)
           ..add('displayName', displayName)
           ..add('photoUrl', photoUrl)
-          ..add('city', city)
+          ..add('fcm', fcm)
           ..add('uid', uid)
           ..add('createdTime', createdTime)
           ..add('phoneNumber', phoneNumber)
@@ -244,9 +244,9 @@ class UsersRecordBuilder implements Builder<UsersRecord, UsersRecordBuilder> {
   String? get uid => _$this._uid;
   set uid(String? uid) => _$this._uid = uid;
 
-  String? _city;
-  String? get city => _$this._city;
-  set city(String? uid) => _$this._city = uid;
+  String? _fcm;
+  String? get fcm => _$this._fcm;
+  set fcm(String? uid) => _$this._fcm = uid;
 
   DateTime? _createdTime;
   DateTime? get createdTime => _$this._createdTime;
@@ -273,7 +273,7 @@ class UsersRecordBuilder implements Builder<UsersRecord, UsersRecordBuilder> {
       _displayName = $v.displayName;
       _photoUrl = $v.photoUrl;
       _uid = $v.uid;
-      _city = $v.city;
+      _fcm = $v.fcm;
       _createdTime = $v.createdTime;
       _phoneNumber = $v.phoneNumber;
       _deviceTokens = $v.deviceTokens;
@@ -304,7 +304,7 @@ class UsersRecordBuilder implements Builder<UsersRecord, UsersRecordBuilder> {
             email: email,
             displayName: displayName,
             photoUrl: photoUrl,
-            city: city,
+            fcm: fcm,
             uid: uid,
             createdTime: createdTime,
             phoneNumber: phoneNumber,

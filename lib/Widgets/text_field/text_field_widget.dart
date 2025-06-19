@@ -1,8 +1,8 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:gopaljewellers/constants/color.dart';
+
+import '../../constants/color.dart';
 
 class CustomTextField extends StatelessWidget {
   const CustomTextField({
@@ -60,7 +60,7 @@ class CustomTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 12.0),
+      padding: const EdgeInsets.only(left: 20, right: 20),
       child: TextFormField(
         onTap: onTap,
         keyboardType: keyboardType,
@@ -74,44 +74,48 @@ class CustomTextField extends StatelessWidget {
         onSaved: onSaved,
         minLines: 1,
         maxLines: maxLines,
-        style: GoogleFonts.alata(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: from == "FF" ? white : black,
+          color: black,
         ),
         decoration: InputDecoration(
           labelText: labelText,
           prefixIcon: prefixIcon,
           suffixIcon: suffixIcon,
 
-          labelStyle: GoogleFonts.alata(
+          labelStyle: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w400,
-            color: from == "FF" ? white.withOpacity(0.6) : secondaryTextColor,
+            color: from == "FF" ? black : secondaryTextColor,
           ),
           hintText: hintText,
 
-          hintStyle: GoogleFonts.alata(
+          hintStyle: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w400,
-            color: from == "FF" ? white.withOpacity(0.6) : secondaryTextColor,
+            color: from == "FF" ? black : secondaryTextColor,
           ),
           contentPadding:
               EdgeInsets.only(top: 10, bottom: 10, left: 10, right: 10),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: primaryColor22),
+            borderSide: BorderSide(color: Colors.grey.shade600),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(
-                color: from == "FF" ? white.withOpacity(0.6) : primaryColor),
+                color:
+                    from == "FF" ? Colors.grey.shade300 : Colors.grey.shade600),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: primaryColor22),
+            borderSide: BorderSide(color: Colors.grey.shade600),
           ),
-
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
           floatingLabelBehavior: FloatingLabelBehavior.auto,
           isDense: false,
 

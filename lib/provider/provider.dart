@@ -1,14 +1,22 @@
+import 'dart:developer';
+
 import 'package:flutter/foundation.dart';
 
 class drawerProvider with ChangeNotifier {
-  String _items = "Necklace";
+  String _items = "TEMPLE (GERU) 22K";
   String get items => _items;
-  String _itemImage = "assets/images/necklace.png";
-  String get itemImages => _itemImage;
+  var fromGm;
+  var toGM;
+  updateFilter(f, t) {
+    fromGm = f;
+    toGM = t;
+    log("$fromGm");
+    log("$toGM");
+    notifyListeners();
+  }
 
   updateScreen(value) {
-    _items = value!['name'].toString();
-    _itemImage = value!['image'].toString();
+    _items = value.toString();
 
     notifyListeners();
   }

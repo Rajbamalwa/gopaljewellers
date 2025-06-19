@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gopaljewellers/Widgets/custom/customtext.dart';
@@ -28,22 +29,25 @@ class _CartScreenState extends State<CartScreen> {
   bool iSLoading = false;
 
   getCart() async {
-    setState(() {
-      iSLoading = true;
-    });
-    await CartTable()
-        .queryRows(
-      queryFn: (q) => q
-          .eq("user_uid", currentUserUid.toString())
-          // .in_("product_id", product_idß)
-          .order('id', ascending: false),
-    )
-        .then((value) {
-      log(value.toString());
-      cart.addAll(value);
-      getProducts();
-      log(cart.toString());
-    });
+    if (FirebaseAuth.instance.currentUser == null) {
+    } else {
+      setState(() {
+        iSLoading = true;
+      });
+      await CartTable()
+          .queryRows(
+        queryFn: (q) => q
+            .eq("user_uid", currentUserUid.toString())
+            // .in_("product_id", product_idß)
+            .order('id', ascending: false),
+      )
+          .then((value) {
+        log(value.toString());
+        cart.addAll(value);
+        getProducts();
+        log(cart.toString());
+      });
+    }
   }
 
   @override
@@ -171,7 +175,7 @@ class _CartScreenState extends State<CartScreen> {
                                                   ),
                                                 ),
                                                 title: CustomText(
-                                                    data.product_name
+                                                    data.product_type
                                                         .toString(),
                                                     black,
                                                     20,
@@ -230,7 +234,7 @@ class _CartScreenState extends State<CartScreen> {
                                                           FontWeight.w400,
                                                           TextOverflow.clip),
                                                       CustomText2(
-                                                          data.product_type
+                                                          data.product_name
                                                               .toString(),
                                                           black,
                                                           12,

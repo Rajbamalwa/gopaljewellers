@@ -79,7 +79,7 @@ class _AbountUsScreenState extends State<AbountUsScreen> {
           children: [
             Container(
               decoration: BoxDecoration(
-                  color: primaryColor,
+                  color: primaryColor3,
                   border: Border.fromBorderSide(BorderSide.none)),
               height: 25,
               child: Marquee(
@@ -169,14 +169,18 @@ class _AbountUsScreenState extends State<AbountUsScreen> {
               padding: const EdgeInsets.only(left: 16, right: 16),
               child: InkWell(
                 onTap: () async {
-                  String url = Platform.isIOS
-                      ? 'mailto://app.jewellery@gmail.com'
-                      : 'mailto:app.jewellery@gmail.com';
+                  final Uri params = Uri(
+                    scheme: 'mailto',
+                    path: 'app.jewellery@gmail.com',
+                    // query:
+                    //     'subject=App Feedback&body=App Version 3.23', //add subject and body here
+                  );
 
+                  var url = params.toString();
                   if (await canLaunch(url)) {
                     await launch(url);
                   } else {
-                    print(' could not launch mailto://app.jewellery@gmail.com');
+                    throw 'Could not launch $url';
                   }
                 },
                 child: Container(
@@ -190,7 +194,7 @@ class _AbountUsScreenState extends State<AbountUsScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      SizedBox(
+                      const SizedBox(
                         height: 10,
                       ),
                       CircleAvatar(
